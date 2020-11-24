@@ -1,0 +1,139 @@
+INSERT OP:
+** insert a new customer:
+3 input boxes:
+- for cid (3 digit int) and
+- for name (first and last)
+- for age
+SQL: insert into Customer values(INPUT1, INPUT2, INPUT3)
+
+
+** insert a new order, meaning reserve a seat:
+6 input boxes:
+- orderid (insert a 3 digit int)
+- cid (from Customer)
+- seat# (from Seat)
+- hours
+- date
+- method
+SQL:
+int calcAmount = hours * TODO(get rate from seat#);
+insert into Make_Orders values(ORDERIDINPUT, CIDINPUT, DATEINPUT, METHOD)
+insert into Reserves values(ORDERIDINPUT, SEAT#INPUT, HOURSINPUT)
+
+
+** insert a food order: only to an existing order, made above
+3 input boxes:
+- orderid (from Make_Orders)
+- fname (from Food)
+- qty
+SQL:
+insert into Food_Order values(FNAMEINPUT, ORDERIDINPUT, QTYINPUT)
+update Make_Orders set amount += qty * TODO(get food price from fname)
+
+-----------------------------------------------
+
+DELETE OP:
+** delete an order: 1 input box for orderid
+SQL: delete from Make_Orders where orderid = INPUT
+
+-----------------------------------------------
+
+UPDATE OP:
+** update Customer's age:
+2 input boxes:
+- cid
+- new age
+SQL: update Customer set age = new age where cid = cidinput
+
+------------------------------------------------
+
+SELECTION:
+
+** Display the games for a console:
+1 input box:
+- platform (e.g. PS4, PC, Switch)
+SQL:
+select (*)
+from Game
+where platform = INPUT
+
+----------------------------------------------------
+
+PROJECTION: combined with join as allowed in the updated milestone 3 rubric
+
+----------------------------------------------------
+
+JOIN: also meets PROJECTION requirements above (project 3-5 attributes)
+** Show customer orders
+1 input box:
+- cid (existing cid)
+
+SQL:
+SELECT O.cid as cid, C.cname as name, O.orderid as orderid, O.odate as odate
+FROM Make_Orders O, Reserves R, Customer C
+where O.cid = 111 and C.cid = O.cid and O.orderid = R.orderid
+
+-----------------------------------------------------
+
+AGGREGATION WITH GROUP BY:
+** show number of games for each console
+
+SQL:
+select platform, Count (*)
+from Game
+group by platform
+
+---------------------------------------------------------
+
+AGGREGATION WITH HAVING:
+** show number of reservations per platform with more than 1 res. (e.g. per PS4, PC)
+SQL:
+select C.platform as platform, Count (*) as numReservations
+from Reserves R, Has H, ConsoleSystem C
+where R.seat# = H.seat# and H.console# = C.console# 
+group by C.platform
+having Count(*) > 1
+
+-----------------------------------------------------------
+
+NESTED AGGREGATION WITH GROUP BY:
+** find the average plays on a platform per day
+SQL:
+select platform, AVG(numReservations) as AvgPerDay
+from (	select C.platform as platform, O.odate, Count (*) as numReservations
+	from Make_Orders O, Reserves R, Has H, ConsoleSystem C
+	where O.orderid = R.orderid and R.seat# = H.seat# and H.console# = C.console# 
+	group by C.platform, O.odate) 
+group by platform
+
+
+-----------------------------------------------------------
+
+DIVISION:
+** find all the customers who's eaten every menu item
+
+select Cu.cid as ID, Cu.cname as SuperEater
+from Customer Cu
+where not exists (
+select F.fname
+from Food F
+where not exists (
+select O.orderid
+from Make_Orders O, Food_Order FO
+where Cu.cid = O.cid and O.orderid = FO.orderid and F.fname = FO.fname));
+
+
+
+**DISREGARD**
+** find all the customers who's played every system
+select Cu.cid as ID, Cu.cname as SuperPlayer
+from Customer Cu
+where not exists (
+	select *
+	from (	select platform
+		from Game
+		group by platform)
+	where not exists (
+		select O.orderid
+		from Make_Orders O, Reserves R, Has H, ConsoleSystem Co
+		where Cu.cid = O.cid and O.orderid = R.orderid and R.seat# = H.seat# and H.console# and Co.console# and Co.platform = platform));
